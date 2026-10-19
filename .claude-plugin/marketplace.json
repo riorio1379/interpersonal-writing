@@ -1,0 +1,13 @@
+{
+  "name": "interpersonal-writing",
+  "owner": {
+    "name": "Rio Uchigaki"
+  },
+  "description": "相手との関係で書き方を変える、対人の文章のスキル（日本語中心・英語メール）",
+  "plugins": [
+    {
+      "name": "interpersonal-writing",
+      "source": "./"
+    }
+  ]
+}

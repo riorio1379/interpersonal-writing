@@ -1,0 +1,9 @@
+{
+  "name": "interpersonal-writing",
+  "displayName": "対人文章 / Interpersonal Writing",
+  "version": "0.1.0",
+  "description": "相手との関係（家族・友人・職場・教員・社外・窓口）と用件から、敬語の段階と文面の型を決めて、メール・チャット・問い合わせの文面を書く・直すスキル。敬語の誤りと署名漏れは機械で検査する。",
+  "author": { "name": "Rio Uchigaki" },
+  "license": "MIT",
+  "keywords": ["japanese", "keigo", "business-email", "敬語", "ビジネスメール", "writing"]
+}
