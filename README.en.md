@@ -20,13 +20,13 @@ More honorifics do not make a message more polite. The government guideline on h
 ## Install
 
 ```bash
-npx skills add <owner>/interpersonal-writing
+npx skills add riorio1379/interpersonal-writing
 ```
 
 As a Claude Code plugin:
 
 ```text
-/plugin marketplace add <owner>/interpersonal-writing
+/plugin marketplace add riorio1379/interpersonal-writing
 /plugin install interpersonal-writing@interpersonal-writing
 ```
 

@@ -44,10 +44,10 @@ POLITE_MARKERS = {
 }
 # 1文の中の敬語の重なりを数える目印
 # 長い目印から先に当てる（「させていただ」を「させて」「いただ」と三重に数えない）
-STACK_MARKERS = re.compile(r"させていただ|いただ|存じ|させて|申し上げ|恐れ入|恐縮|賜")
+STACK_MARKERS = re.compile(r"させていただ|いただ|(?<!ご)存じ|させて|申し上げ|恐れ入|恐縮|賜")  # 「ご存じ」は尊敬語なので数えない
 
 # 常体の文末（段階2以上で、敬体と混ざっていないかを見る）
-PLAIN_END = re.compile(r"(だ|である|だった|だろう|じゃん|だよ|だね|よね|だけど|しよう)[。！!？?]?$")
+PLAIN_END = re.compile(r"(だ|である|だった|だろう|じゃん|だよ|だね|(?<!です)(?<!ます)よね|だけど|しよう)[。！!？?]?$")
 POLITE_END = re.compile(r"(です|ます|ました|でした|ません|ましょう|ください|ございます)[。！!？?]?$")
 
 # 段階0・1（家族・友人）で改まりすぎの目印
@@ -59,7 +59,7 @@ GREETING_ONLY = re.compile(
     r"|すみません|失礼します|失礼いたします|今(?:お時間)?(?:よろしい|大丈夫)でしょうか|今いいですか|[@＠][\w.\-]+?(?=\s|$)|[\s。、！!？?〜ー])+$"
 )
 
-ADDRESS = re.compile(r"(様|御中|先生|各位|殿)\s*$")
+ADDRESS = re.compile(r"(様|御中|先生|各位|殿|部長|課長|係長|店長|社長|教授)\s*$")
 GREETING_L4 = re.compile(r"(お世話になっております|お世話になります|ご連絡ありがとうございます|ご返信ありがとうございます)")
 GREETING_L5 = re.compile(r"(初めてご連絡|はじめてご連絡|突然のご連絡|突然のメール|初めてメール|はじめまして|初めまして)")
 WEEKDAYS = "月火水木金土日"
@@ -81,7 +81,10 @@ class Finding:
 
 def load_body(path: str) -> tuple[list[str], int]:
     """文面を読み、検査する行と、その先頭が元のファイルの何行目かを返す。"""
-    text = sys.stdin.read() if path == "-" else Path(path).read_text(encoding="utf-8")
+    try:
+        text = sys.stdin.read() if path == "-" else Path(path).read_text(encoding="utf-8")
+    except OSError as e:
+        sys.exit(f"文面のファイルが読めない：{path}（{e.strerror}）")
     lines = text.splitlines()
     marks = [i for i, line in enumerate(lines) if SEPARATOR.match(line)]
     if len(marks) >= 2:
@@ -95,7 +98,10 @@ def load_profile(arg: str | None) -> tuple[dict | None, Path]:
     if not path.exists():
         return None, path
     m = re.search(r"```toml\n(.*?)```", path.read_text(encoding="utf-8"), re.S)
-    return (tomllib.loads(m.group(1)) if m else {}), path
+    try:
+        return (tomllib.loads(m.group(1)) if m else {}), path
+    except tomllib.TOMLDecodeError as e:
+        sys.exit(f"profile の設定（toml）が読めない：{path}（{e}）")
 
 
 def load_rules() -> list[dict]:
@@ -149,7 +155,7 @@ def check_politeness(lines, offset, level) -> list[Finding]:
         return out
     body = "\n".join(line for line in lines if not is_quote(line))
     for key, label in POLITE_MARKERS.items():
-        count = body.count(key)
+        count = body.count(key) - (body.count("ご存じ") if key == "存じ" else 0)  # 「ご存じ」は尊敬語
         if count >= 2:
             where = [offset + i + 1 for i, line in enumerate(lines) if key in line and not is_quote(line)]
             out.append(Finding("注意", where[0], label, f"1通に「{label}」が{count}回（{'・'.join(map(str, where))}行目）。重ねると丁寧すぎに見える", "1回に減らす", "SKILL.md 4. 書く／ビジネスメール実態調査2026"))

@@ -20,13 +20,13 @@
 ## 入れ方
 
 ```bash
-npx skills add <owner>/interpersonal-writing
+npx skills add riorio1379/interpersonal-writing
 ```
 
 Claude Code のプラグインとして入れる場合：
 
 ```text
-/plugin marketplace add <owner>/interpersonal-writing
+/plugin marketplace add riorio1379/interpersonal-writing
 /plugin install interpersonal-writing@interpersonal-writing
 ```
 

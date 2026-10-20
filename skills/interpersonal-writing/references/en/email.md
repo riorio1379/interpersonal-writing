@@ -19,7 +19,7 @@
 | カスタマーサポート | Dear [会社名] Customer Support, ／ 宛先が分からない手紙なら To whom it may concern, | Sincerely, ／ To whom it may concern で始めたら Yours faithfully, | 英国 Citizens Advice のひな形は To whom it may concern と Yours faithfully の組み合わせ |
 
 - 教員の肩書きは、本人の大学のページで確かめる。英国やオーストラリアでは Professor が職位の名前なので、Dr. の方が正確なことがある。分からなければ Dear Professor [姓] にする（私の判断）
-- 相手が返信で名前だけ（Hi Rio, と First name）で書いてきたら、次からは相手の書き方に合わせてよい（私の判断）
+- 相手が返信で名前だけ（Hi Hanako, と First name）で書いてきたら、次からは相手の書き方に合わせてよい（私の判断）
 
 ## 件名
 

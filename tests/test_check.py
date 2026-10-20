@@ -158,7 +158,7 @@ class Marketplace(unittest.TestCase):
         self.assertIn("PayPay", words(run("PayPayで直接払うのでもよいですか。", 4, "marketplace"), "誤り"))
 
     def test_postal_code(self):
-        self.assertIn("160-0005", words(run("住所は160-0005です。", 4, "marketplace"), "注意"))
+        self.assertIn("100-0001", words(run("住所は100-0001です。", 4, "marketplace"), "注意"))
 
     def test_real_name(self):
         self.assertIn("山田", words(run("出品者の山田です。", 4, "marketplace"), "注意"))
@@ -189,6 +189,35 @@ class Chat(unittest.TestCase):
         text = "明日のシフトを代わっていただけますか。\n\n山田 花子\n電話：090-0000-0000\n"
         result = run(text, 3, "chat")
         self.assertTrue(any("署名" in f["message"] for f in result["findings"]))
+
+
+class FalsePositives(unittest.TestCase):
+    """公開前の点検（2026-10-20）で見つかった誤検知を、もう出さない。"""
+
+    def test_particle_is_not_humble(self):
+        for text in ("お金を貸していただけますか。", "お電話で話していただけますか。"):
+            with self.subTest(text=text):
+                self.assertEqual(words(run(text), "誤り"), [])
+
+    def test_humble_still_caught(self):
+        self.assertTrue(words(run("ご確認していただけますか。"), "誤り"))
+
+    def test_kouho_is_not_seasonal_greeting(self):
+        self.assertNotIn("の候", words(run("日程の候補をお送りします。", 4, "email"), "注意"))
+
+    def test_title_as_address(self):
+        text = EmailShape.good.replace("人事部 佐藤様", "人事部 佐藤部長")
+        self.assertFalse(any("宛名" in f["message"] for f in run(text, 4, "email")["findings"]))
+
+    def test_desuyone_is_polite(self):
+        self.assertEqual(run("資料をお送りします。\n明日ですよね。")["counts"]["注意"], 0)
+
+    def test_gozonji_not_counted(self):
+        result = run("ご存じのとおりです。\nご存じでしたら教えてください。")
+        self.assertFalse(any("存じます" in f["text"] for f in result["findings"]))
+
+    def test_mercari_url_allowed(self):
+        self.assertEqual(words(run("https://jp.mercari.com/item/m123 の商品です。", 4, "marketplace"), "誤り"), [])
 
 
 class Stacking(unittest.TestCase):
