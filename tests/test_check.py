@@ -150,6 +150,52 @@ class Marketplace(unittest.TestCase):
     def test_phone_number(self):
         self.assertTrue(words(run("090-1234-5678 に連絡ください", 4, "marketplace"), "誤り"))
 
+    def test_phone_is_not_postal_code(self):
+        result = run("090-1234-5678 に連絡ください", 4, "marketplace")
+        self.assertFalse(any("郵便番号" in f["message"] for f in result["findings"]))
+
+    def test_payment_outside(self):
+        self.assertIn("PayPay", words(run("PayPayで直接払うのでもよいですか。", 4, "marketplace"), "誤り"))
+
+    def test_postal_code(self):
+        self.assertIn("160-0005", words(run("住所は160-0005です。", 4, "marketplace"), "注意"))
+
+    def test_real_name(self):
+        self.assertIn("山田", words(run("出品者の山田です。", 4, "marketplace"), "注意"))
+
+
+class Chat(unittest.TestCase):
+    def test_greeting_only(self):
+        result = run("お疲れさまです！", 2, "chat")
+        self.assertTrue(any("用件が無い" in f["message"] for f in result["findings"]))
+
+    def test_greeting_with_request(self):
+        result = run("@山本さん\nお疲れさまです！\n来週の発表順を教えてください。", 2, "chat")
+        self.assertFalse(any("用件が無い" in f["message"] for f in result["findings"]))
+
+    def test_channel_mention(self):
+        self.assertIn("@channel", words(run("@channel 明日の集合は10時です。", 2, "chat"), "注意"))
+
+    def test_too_formal_for_chat(self):
+        self.assertIn("申し上げ", words(run("よろしくお願い申し上げます。", 3, "chat"), "注意"))
+
+    def test_osewa_to_inside(self):
+        self.assertIn("お世話になっております", words(run("お世話になっております。", 3, "chat"), "注意"))
+
+    def test_osewa_to_outside_chat_is_ignored(self):
+        self.assertNotIn("お世話になっております", words(run("お世話になっております。", 4, "chat"), "注意"))
+
+    def test_signature_in_chat(self):
+        text = "明日のシフトを代わっていただけますか。\n\n山田 花子\n電話：090-0000-0000\n"
+        result = run(text, 3, "chat")
+        self.assertTrue(any("署名" in f["message"] for f in result["findings"]))
+
+
+class Stacking(unittest.TestCase):
+    def test_saseteitadaku_counts_once(self):
+        result = run("発送後はご連絡させていただきます。", 4, "marketplace")
+        self.assertFalse(any("目印" in f["message"] for f in result["findings"]))
+
 
 class ProfileRules(unittest.TestCase):
     def test_forbidden_first_person(self):

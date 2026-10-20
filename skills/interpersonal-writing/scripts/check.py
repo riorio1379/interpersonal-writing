@@ -43,7 +43,8 @@ POLITE_MARKERS = {
     "大変": "大変",
 }
 # 1文の中の敬語の重なりを数える目印
-STACK_MARKERS = ("いただ", "存じ", "させて", "申し上げ", "恐れ入", "恐縮", "賜", "させていただ")
+# 長い目印から先に当てる（「させていただ」を「させて」「いただ」と三重に数えない）
+STACK_MARKERS = re.compile(r"させていただ|いただ|存じ|させて|申し上げ|恐れ入|恐縮|賜")
 
 # 常体の文末（段階2以上で、敬体と混ざっていないかを見る）
 PLAIN_END = re.compile(r"(だ|である|だった|だろう|じゃん|だよ|だね|よね|だけど|しよう)[。！!？?]?$")
@@ -51,6 +52,12 @@ POLITE_END = re.compile(r"(です|ます|ました|でした|ません|ましょ
 
 # 段階0・1（家族・友人）で改まりすぎの目印
 FORMAL_IN_CASUAL = re.compile(r"(いたします|申し上げ|いただけますでしょうか|存じます|恐れ入ります|ございます)")
+
+# チャットで、挨拶・呼びかけだけで用件の無い1通（references/ja/chat.md）
+GREETING_ONLY = re.compile(
+    r"^(?:お疲れ(?:さま|様)です|おつかれさまです|お世話になっております|こんにちは|こんばんは|おはようございます"
+    r"|すみません|失礼します|失礼いたします|今(?:お時間)?(?:よろしい|大丈夫)でしょうか|今いいですか|[@＠][\w.\-]+?(?=\s|$)|[\s。、！!？?〜ー])+$"
+)
 
 ADDRESS = re.compile(r"(様|御中|先生|各位|殿)\s*$")
 GREETING_L4 = re.compile(r"(お世話になっております|お世話になります|ご連絡ありがとうございます|ご返信ありがとうございます)")
@@ -147,7 +154,7 @@ def check_politeness(lines, offset, level) -> list[Finding]:
             where = [offset + i + 1 for i, line in enumerate(lines) if key in line and not is_quote(line)]
             out.append(Finding("注意", where[0], label, f"1通に「{label}」が{count}回（{'・'.join(map(str, where))}行目）。重ねると丁寧すぎに見える", "1回に減らす", "SKILL.md 4. 書く／ビジネスメール実態調査2026"))
     for n, s in sentences(lines, offset):
-        hits = sum(s.count(k) for k in STACK_MARKERS)
+        hits = len(STACK_MARKERS.findall(s))
         if hits >= 3:
             out.append(Finding("注意", n, s[:30], f"1文に敬語の目印が{hits}個。回りくどくなっていないか", "動詞を一つにして言い切る", "敬語の指針（適度な敬語）"))
     return out
@@ -220,6 +227,37 @@ def check_email(lines, offset, level, profile, context, subject) -> list[Finding
     return out
 
 
+def check_chat(lines, offset, level) -> list[Finding]:
+    out = []
+    rows = nonempty(lines, offset)
+    if not rows:
+        return out
+    body = "\n".join(t for _, t in rows)
+    if level >= 2 and GREETING_ONLY.match(body):
+        out.append(Finding("注意", rows[0][0], body[:20], "挨拶・呼びかけだけで用件が無い。返事を待たせるので、用件を同じ1通に書く", "挨拶の後に用件を続ける", "Slack 日本語ブログ etiquette tips"))
+    tail = signature_block(lines, offset)
+    if level >= 2 and tail:
+        tail_text = "\n".join(t for _, t in tail)
+        if EMAIL_ADDR.search(tail_text) or PHONE.search(tail_text):
+            out.append(Finding("注意", tail[0][0], tail[0][1][:20], "チャットの末尾に署名（連絡先）がある。チャットでは相手が送り主を分かっているので要らない", "削る", "references/ja/chat.md"))
+    return out
+
+
+def check_marketplace(lines, offset, profile) -> list[Finding]:
+    """取引の相手に本名を出していないか。電話・SNS・住所は rules_ja.toml で拾う。"""
+    out = []
+    name = (profile or {}).get("name", "")
+    if not name:
+        return out
+    family = re.split(r"[\s　]", name.strip())[0]
+    for i, line in enumerate(lines):
+        if is_quote(line):
+            continue
+        if family and family in line.replace("　", " "):
+            out.append(Finding("注意", offset + i + 1, family, "取引の相手に本名を出している。名前・住所・電話などの個人情報は書かない", "削る（ニックネームで足りる）", "references/ja/marketplace.md"))
+    return out
+
+
 def guess_year(month: int, day: int, today: date) -> int | None:
     """年の無い日付は、今日から見ていちばん近い年とみなす（前後6か月）。"""
     best = None
@@ -285,6 +323,10 @@ def main() -> int:
     findings += check_weekdays(lines, offset, date.fromisoformat(args.today) if args.today else date.today())
     if args.medium == "email":
         findings += check_email(lines, offset, args.level, profile, args.context, args.subject)
+    elif args.medium == "chat":
+        findings += check_chat(lines, offset, args.level)
+    elif args.medium == "marketplace":
+        findings += check_marketplace(lines, offset, profile)
     findings += check_profile_rules(lines, offset, args.level, args.medium, profile)
     findings.sort(key=lambda f: ({"誤り": 0, "型": 1, "注意": 2}.get(f.category, 3), f.line))
 

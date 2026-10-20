@@ -180,5 +180,51 @@ pattern = "LINE ?ID|ライン ?ID|インスタ|Instagram|@[A-Za-z0-9_]{3,}|https
 category = "誤り"
 message = "連絡先・SNS・外部サイトへの誘導（メルカリでは禁止）"
 fix = "削る"
-source = "メルカリ ガイド「外部への誘導の禁止」"
+source = "メルカリ ガイド「外部サービスなどに誘導する行為」"
 media = ["marketplace"]
+
+[[rule]]
+pattern = "(?<![\\d-])\\d{3}-\\d{4}(?![\\d-])|〒"
+category = "注意"
+message = "郵便番号・住所らしきもの。取引の相手に個人情報を書かない"
+fix = "削る"
+source = "メルカリ ガイド「取引マナー」6（取引メッセージでも個人情報は書かない）"
+media = ["marketplace"]
+
+[[rule]]
+pattern = "PayPay|ペイペイ|銀行振込|口座に振り込|直接(取引|お支払|支払|払|お振込|やり取り)|メルカリ外|メルカリの外"
+category = "誤り"
+message = "メルカリの外での支払い・取引への誘導（禁止）"
+fix = "削る（支払いはメルカリの決済で）"
+source = "メルカリ ガイド「禁止されている行為」（用意された以外の決済方法を促すこと）"
+media = ["marketplace"]
+
+# --- チャット ---
+
+[[rule]]
+pattern = "お世話になっております|お世話になります"
+category = "注意"
+message = "内の相手（職場・サークル・ゼミ）へのチャットでは、外の相手向けの挨拶になる"
+fix = "削る（職場の慣用があれば「お疲れさまです」）"
+source = "デジタル庁事務局 Slackご利用の手引き p.5／和光市 チャット活用指針"
+media = ["chat"]
+min_level = 2
+max_level = 3
+
+[[rule]]
+pattern = "申し上げ|何卒|賜|存じます|存じております|恐縮"
+category = "注意"
+message = "チャットにしては改まりすぎ（メールの段階4・5の言い方）"
+fix = "よろしくお願いいたします／ありがとうございます など"
+source = "references/levels.md（段階2・3の結び）"
+media = ["chat"]
+min_level = 2
+max_level = 3
+
+[[rule]]
+pattern = "[@＠](channel|here|everyone|all)(?![A-Za-z])"
+category = "注意"
+message = "チャンネルの全員に通知が届く。全員に関わる急ぎの連絡だけに使う"
+fix = "@相手の名前"
+source = "Slack ヘルプ「チャンネルやワークスペースに通知する」／デジタル庁事務局 Slackご利用の手引き p.5"
+media = ["chat"]
